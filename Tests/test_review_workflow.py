@@ -138,6 +138,34 @@ class RestoreTests(ScriptCase):
         self.assertEqual((tree / 'AGENTS.md').read_text(encoding='utf-8'), 'base')
 
 
+class SharedStandardTests(ScriptCase):
+    def give(self, standard):
+        case = Path(tempfile.mkdtemp(dir=self.dir))
+        tree = case / 'tree'
+        shared = tree / '.review-shared' / 'review'
+        shared.mkdir(parents=True)
+        if standard is not None:
+            (shared / 'review-standard.md').write_text(standard, encoding='utf-8')
+        home = case / 'home'
+        (home / '.claude').mkdir(parents=True)
+        (home / '.claude' / 'CLAUDE.md').write_text('existing rule\n', encoding='utf-8')
+        result = self.run_step('Give the reviewer the shared review standard', cwd=tree, HOME=str(home))
+        return result, tree, (home / '.claude' / 'CLAUDE.md').read_text(encoding='utf-8')
+
+    def test_standard_is_appended_to_the_user_instructions_and_the_checkout_removed(self):
+        result, tree, instructions = self.give('# Shared review standard\n\n- A rule.\n')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(instructions, 'existing rule\n\n# Shared review standard\n\n- A rule.\n')
+        self.assertFalse((tree / '.review-shared').exists())
+
+    def test_missing_or_empty_standard_stops_the_review(self):
+        for standard in (None, '', '\n\n'):
+            with self.subTest(standard=standard):
+                result, _, instructions = self.give(standard)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(instructions, 'existing rule\n')
+
+
 class SummaryTests(ScriptCase):
     def summary(self, conclusion='success', bodies=(), calls=None, record=None, reviewed='abc', head='abc', **env):
         comments = [{'user': {'login': 'github-actions[bot]'}, 'created_at': '2026-01-01T00:00:10Z', 'body': body}
@@ -246,10 +274,35 @@ class CallerContractTests(unittest.TestCase):
             block.append(line[1:])
         self.assertEqual(' '.join(expression.split()), ' '.join(' '.join(block).split()))
 
+    def test_shared_standard_comes_from_this_workflows_own_commit(self):
+        text = workflow.read_text(encoding='utf-8')
+        step = text[text.index('- name: Check out the shared review standard'):]
+        step = step[:step.index('\n\n')]
+        self.assertIn('repository: ${{ job.workflow_repository }}', step)
+        self.assertIn('ref: ${{ job.workflow_sha }}', step)
+        self.assertIn('sparse-checkout: review/review-standard.md', step)
+        self.assertLess(text.index('- name: Restore review rules from the default branch'), text.index('- name: Clear the shared standard\'s path'))
+        self.assertLess(text.index('- name: Give the reviewer the shared review standard'), text.index('- id: review'))
+
     def test_review_prompt_is_only_the_skill_command(self):
         # Text after the command becomes part of the skill's review target.
         text = workflow.read_text(encoding='utf-8')
         self.assertRegex(text, r'prompt: /code-review high \$\{\{ env\.PR_NUMBER \}\} --comment --max-findings all\n')
+
+
+class RepositoryTests(unittest.TestCase):
+    def test_no_community_health_files(self):
+        # GitHub applies a public .github repo's copies to every repo of the account that lacks its own.
+        names = {'contributing', 'code_of_conduct', 'security', 'support', 'governance', 'funding',
+                 'issue_template', 'pull_request_template', 'discussion_template'}
+        for folder in (root, root / 'docs', root / '.github'):
+            if not folder.is_dir():
+                continue
+            for entry in folder.iterdir():
+                self.assertNotIn(entry.name.split('.')[0].lower(), names, entry)
+
+    def test_shared_standard_exists_and_is_not_empty(self):
+        self.assertTrue((root / 'review' / 'review-standard.md').read_text(encoding='utf-8').strip())
 
 
 if __name__ == '__main__':
