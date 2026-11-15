@@ -22,15 +22,19 @@ rules to admins, and blocks force pushes and deletion. This repository has no ca
 
 1. Copy [the caller](review/claude-review.yml) unchanged to
    `.github/workflows/claude-review.yml`.
-2. Add a `CLAUDE_CODE_OAUTH_TOKEN` repository secret.
-3. Put the repo's own review rules under a "Code Review Rules" heading in the root
+2. Copy [the drift check](review/review-caller.yml) to `.github/workflows/review-caller.yml`,
+   changing only its cron minute so the calling repos don't all run at once. It fails when
+   the caller stops matching the shared copy, on PRs that edit the caller and daily. Keep it
+   out of required checks, so a change here never blocks a repo's unrelated merges.
+3. Add a `CLAUDE_CODE_OAUTH_TOKEN` repository secret.
+4. Put the repo's own review rules under a "Code Review Rules" heading in the root
    `AGENTS.md`, a nested `AGENTS.md`, or a `CODE_REVIEW.md` an `AGENTS.md` points to.
    The job restores `AGENTS.md`, `CLAUDE.md`, `CLAUDE.local.md` and `CODE_REVIEW.md` from
    the default branch at any depth, so a pull request cannot rewrite its own review rules.
    Rules kept anywhere else would be read from the pull request.
-4. Give the repo's `AGENTS.md` a "Merge gate" section that links to the shared merge gate
+5. Give the repo's `AGENTS.md` a "Merge gate" section that links to the shared merge gate
    and lists only the repo's exceptions.
-5. Open the pull request. Its automatic review is the live run that shows the caller works
+6. Open the pull request. Its automatic review is the live run that shows the caller works
    (merge gate item 4).
 
 Same-repo pull requests are reviewed when opened or marked ready, and an owner, member or

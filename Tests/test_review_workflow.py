@@ -13,6 +13,7 @@ import unittest
 root = Path(__file__).resolve().parents[1]
 workflow = root / '.github' / 'workflows' / 'claude-review-reusable.yml'
 caller = root / 'review' / 'claude-review.yml'
+drift_check = root / 'review' / 'review-caller.yml'
 comment_tool = 'mcp__github_inline_comment__create_inline_comment'
 # The final record entry of a session that did, or never did, call the model.
 used_result = {'type': 'result', 'modelUsage': {'some-model': {'outputTokens': 1}}}
@@ -322,6 +323,15 @@ class CallerContractTests(unittest.TestCase):
                 break
             block.append(line[1:])
         self.assertEqual(' '.join(expression.split()), ' '.join(' '.join(block).split()))
+
+    def test_drift_check_compares_against_the_ref_the_caller_runs(self):
+        ref = re.search(r'uses: npHavens/\.github/\.github/workflows/claude-review-reusable\.yml@(\S+)\n',
+                        caller.read_text(encoding='utf-8')).group(1)
+        text = drift_check.read_text(encoding='utf-8')
+        self.assertIn(f'https://raw.githubusercontent.com/npHavens/.github/{ref}/review/claude-review.yml', text)
+        self.assertIn('diff -u "$RUNNER_TEMP/shared-caller.yml" .github/workflows/claude-review.yml', text)
+        for path in ('.github/workflows/claude-review.yml', '.github/workflows/review-caller.yml'):
+            self.assertIn(f'      - {path}\n', text)
 
     def test_caller_can_be_copied_unchanged(self):
         self.assertIn('    uses: npHavens/.github/.github/workflows/claude-review-reusable.yml@main\n',
