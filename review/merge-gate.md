@@ -11,7 +11,7 @@ Before asking a maintainer to merge a pull request:
    - the run did not complete, or its summary says it is stale;
    - a later push meets a re-review trigger the repo's `AGENTS.md` lists;
    - a later push is otherwise substantial, after asking a maintainer.
-4. A PR that edits its repo's caller (`.github/workflows/claude-review.yml`) or the shared `claude-review-reusable.yml` also needs a run started by an owner, member or collaborator comment whose first words are exactly `@claude review`, because its automatic run uses the PR's own copy of those files. It must also show a successful automatic run on the final head commit before merge, since only that run uses the PR's copy: after a later push, mark the PR draft, then ready, but not with `GITHUB_TOKEN`, whose events don't start workflows. This is the one case that still needs the flip, and the findings from that run follow item 3's rules.
+4. A PR that edits its repo's caller (`.github/workflows/claude-review.yml`) also needs a run started by an owner, member or collaborator comment whose first words are exactly `@claude review`, because its automatic run uses the PR's own copy of that file. It must also show a successful automatic run on the final head commit before merge, since only that run uses the PR's copy: after a later push, mark the PR draft, then ready, but not with `GITHUB_TOKEN`, whose events don't start workflows. This is the one case that still needs the flip, and the findings from that run follow item 3's rules.
 5. Any check the repo's `AGENTS.md` adds, such as live tests, has run, or the PR says plainly which are still needed.
 
 After a caller change merges, the author confirms the comment path with a real `@claude review` comment.
