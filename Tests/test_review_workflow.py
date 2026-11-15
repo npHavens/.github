@@ -12,7 +12,7 @@ import unittest
 
 root = Path(__file__).resolve().parents[1]
 workflow = root / '.github' / 'workflows' / 'claude-review-reusable.yml'
-caller = root / '.github' / 'workflows' / 'claude-review.yml'
+caller = root / 'review' / 'claude-review.yml'
 comment_tool = 'mcp__github_inline_comment__create_inline_comment'
 # The final record entry of a session that did, or never did, call the model.
 used_result = {'type': 'result', 'modelUsage': {'some-model': {'outputTokens': 1}}}
@@ -314,6 +314,10 @@ class CallerContractTests(unittest.TestCase):
             block.append(line[1:])
         self.assertEqual(' '.join(expression.split()), ' '.join(' '.join(block).split()))
 
+    def test_caller_can_be_copied_unchanged(self):
+        self.assertIn('    uses: npHavens/.github/.github/workflows/claude-review-reusable.yml@main\n',
+                      caller.read_text(encoding='utf-8'))
+
     def test_shared_standard_comes_from_this_workflows_own_commit(self):
         text = workflow.read_text(encoding='utf-8')
         step = text[text.index('- name: Check out the shared review standard'):]
@@ -340,6 +344,11 @@ class RepositoryTests(unittest.TestCase):
                 continue
             for entry in folder.iterdir():
                 self.assertNotIn(entry.name.split('.')[0].lower(), names, entry)
+
+    def test_this_repo_does_not_review_its_own_pull_requests(self):
+        for path in workflow.parent.glob('*.y*ml'):
+            if path != workflow:
+                self.assertNotIn('claude-review-reusable.yml', path.read_text(encoding='utf-8'), path)
 
     def test_shared_standard_exists_and_is_not_empty(self):
         self.assertTrue((root / 'review' / 'review-standard.md').read_text(encoding='utf-8').strip())

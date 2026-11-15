@@ -5,11 +5,13 @@ reusable workflow from `main`, so a merge here changes every repo's review at on
 
 ## Merge gate
 
-Follow [the shared merge gate](review/merge-gate.md). Every PR that edits
-`claude-review-reusable.yml` or this repo's caller needs the item 4 runs. After a change
-to `claude-review-reusable.yml` or `review/review-standard.md` merges, the author confirms
-a review in each calling repo with a real `@claude review` comment there. Calling repos
-first run a change after it merges, so one can break until that check.
+This repository's own pull requests get no Claude or Codex review: it has no caller
+workflow, by the maintainer's choice. Before asking a maintainer to merge, CI passes. When
+asking, report the CI result. A maintainer merges; agents do not.
+
+After a change to `claude-review-reusable.yml` or `review/review-standard.md` merges, the
+author confirms a review in each calling repo with a real `@claude review` comment there.
+Calling repos first run a change after it merges, so one can break until that check.
 
 Prefer bug fixes, and ship any other improvement as its own small PR. A change to what
 callers provide must keep every existing caller working at each step:

@@ -1,8 +1,9 @@
 name: Claude review (reusable)
 
-# The review job shared by this repo and others. Each repo has a small caller with the
-# triggers and permissions; claude-review.yml here is the example. Other repos call this
-# file at @main, so a merge here reaches all of them at once. The reviewer also applies
+# The review job for calling repos. Each has a small caller with the triggers and
+# permissions, copied from review/claude-review.yml here; this repo has no caller and
+# doesn't review its own PRs. Calling repos run this file at @main, so a merge here
+# reaches all of them at once. The reviewer also applies
 # review/review-standard.md from this repo, read at the commit the run uses.
 # In a called workflow, github.* and github.token belong to the caller's repo and event.
 # Callers should use exactly this filter. The gate below owns the trigger phrase:
@@ -140,7 +141,6 @@ jobs:
 
       # The shared standard comes from this workflow's own repo at the commit this run uses
       # (job.workflow_*), not from the calling repo, so a calling repo's PR cannot change it.
-      # In this repo a pull_request run already uses the PR's copy of everything, as above.
       - name: Clear the shared standard's path
         shell: bash
         run: rm -rf .review-shared
