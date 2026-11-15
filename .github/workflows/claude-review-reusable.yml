@@ -219,6 +219,25 @@ jobs:
           denied="$(jq -r '.[] | select(.type == "result") | .permission_denials[]?.tool_name' "$EXECUTION_FILE")"
           if [[ -z "$denied" ]]; then echo "No denied tools."; else sort <<<"$denied" | uniq -c; fi
 
+      # A session with no model usage got no model output, so its result is the CLI's own
+      # message, such as an error, and can be shown here. Model output can quote PR text, so
+      # it is never shown. GitHub masks the token if a message ever includes it.
+      - name: Log why the session did not reach the model
+        if: always()
+        continue-on-error: true
+        shell: bash
+        env:
+          EXECUTION_FILE: ${{ steps.review.outputs.execution_file }}
+        run: |
+          [[ -s "$EXECUTION_FILE" ]] || { echo "No run record."; exit 0; }
+          jq -s -r '
+            [.. | objects | select(.type == "result")] | last
+            | if . == null then "The run record has no result."
+              elif (.modelUsage // {} | length) > 0 then "The session reached the model."
+              else "The session did not reach the model (\(.subtype // "no subtype"), \(.duration_ms // "unknown") ms): \(.result // "" | tostring | .[0:500])"
+              end
+          ' "$EXECUTION_FILE" || echo "The run record could not be read."
+
       - name: Post the review summary
         if: always()
         shell: bash
@@ -251,11 +270,17 @@ jobs:
           total=$((high + medium + low + unrated))
           tally="$total inline finding(s): $high high, $medium medium, $low low"
           if ((unrated > 0)); then tally+=", $unrated without a severity label"; fi
+          # A session that never reaches the model still concludes success, so a clean finish
+          # also needs model usage in the run's record. The turn count can't show it: it stays
+          # 0 in real reviews, because the skill runs forked. An unreadable record shows none.
+          used="$(jq -s '[.. | objects | select(.type == "result") | .modelUsage // {} | length] | add // 0' "$EXECUTION_FILE" 2>/dev/null || echo 0)"
           if [[ "$CONCLUSION" == success ]]; then
-            if ((total == 0)); then
-              summary="Claude review finished without posting any inline comments."
-            else
+            if ((total > 0)); then
               summary="Claude review posted $tally."
+            elif ((used == 0)); then
+              summary="Claude review did not complete: its run record shows no call to the model, so this PR has not been reviewed."
+            else
+              summary="Claude review finished without posting any inline comments."
             fi
           elif ((total == 0)); then
             summary="Claude review did not complete, so this PR has not been reviewed."

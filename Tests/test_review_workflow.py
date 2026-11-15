@@ -14,6 +14,9 @@ root = Path(__file__).resolve().parents[1]
 workflow = root / '.github' / 'workflows' / 'claude-review-reusable.yml'
 caller = root / 'review' / 'claude-review.yml'
 comment_tool = 'mcp__github_inline_comment__create_inline_comment'
+# The final record entry of a session that did, or never did, call the model.
+used_result = {'type': 'result', 'modelUsage': {'some-model': {'outputTokens': 1}}}
+unused_result = {'type': 'result', 'modelUsage': {}}
 
 # Runs the real --jq filter on FAKE_API_JSON, so the summary's filter is tested too.
 fake_gh = r'''#!/bin/bash
@@ -178,7 +181,7 @@ class SummaryTests(ScriptCase):
         path = self.dir / 'record.json'
         if record is None:
             call = {'type': 'tool_use', 'name': comment_tool, 'input': {'body': 'text'}}
-            record = json.dumps([{'type': 'assistant', 'message': {'content': [call] * (calls or 0)}}])
+            record = json.dumps([{'type': 'assistant', 'message': {'content': [call] * (calls or 0)}}, used_result])
         path.write_text(record, encoding='utf-8')
         result = self.run_step('Post the review summary', CONCLUSION=conclusion, FAKE_API_JSON=str(api),
                                STARTED_AT='2026-01-01T00:00:00Z', EXECUTION_FILE=str(path), REVIEWED_SHA=reviewed,
@@ -231,14 +234,51 @@ class SummaryTests(ScriptCase):
         self.assertIn('Commit: unknown.', text)
         self.assertNotIn('stale', text)
 
-    def test_unusable_run_records_are_treated_as_no_calls(self):
-        for record in ('', 'not json'):
-            self.assertTrue(self.summary(record=record).startswith('Claude review finished'), repr(record))
+    def test_success_that_never_reached_the_model_is_not_a_review(self):
+        # The action reports success even when the session ends before any model call.
+        records = (json.dumps([unused_result]), json.dumps([{'type': 'result'}]), json.dumps([]), '', 'not json')
+        for record in records:
+            with self.subTest(record=record):
+                text = self.summary(record=record)
+                self.assertTrue(text.startswith('Claude review did not complete: its run record shows no call to the model,'), text)
+                self.assertNotIn('finished', text)
 
     def test_calls_are_counted_across_a_multi_document_record(self):
         call = json.dumps([{'type': 'tool_use', 'name': comment_tool}])
         text = self.summary(record=f'{call}\n{call}\n')
         self.assertTrue(text.startswith('Claude review made 2 comment call(s), but none posted.'), text)
+
+    def test_model_usage_is_found_in_a_multi_document_record(self):
+        text = self.summary(record=f'{json.dumps([{"type": "assistant"}])}\n{json.dumps([used_result])}\n')
+        self.assertTrue(text.startswith('Claude review finished without posting any inline comments.'), text)
+
+
+class NoModelLogTests(ScriptCase):
+    def log(self, content):
+        path = self.dir / 'record.json'
+        path.write_text(content, encoding='utf-8')
+        result = self.run_step('Log why the session did not reach the model', EXECUTION_FILE=str(path))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return result.stdout
+
+    def test_shows_the_cli_message_when_the_model_was_never_called(self):
+        out = self.log(json.dumps([{**unused_result, 'subtype': 'success', 'duration_ms': 1777, 'result': 'Unknown command'}]))
+        self.assertIn('The session did not reach the model (success, 1777 ms): Unknown command', out)
+
+    def test_never_shows_result_text_once_the_model_was_called(self):
+        out = self.log(json.dumps([{**used_result, 'result': 'review text quoting the PR'}]))
+        self.assertIn('The session reached the model.', out)
+        self.assertNotIn('quoting the PR', out)
+
+    def test_message_is_cut_to_500_characters(self):
+        out = self.log(json.dumps([{**unused_result, 'result': 'x' * 600}]))
+        self.assertIn('x' * 500 + '\n', out)
+        self.assertNotIn('x' * 501, out)
+
+    def test_says_when_there_is_nothing_to_show(self):
+        self.assertIn('No run record.', self.log(''))
+        self.assertIn('The run record could not be read.', self.log('not json'))
+        self.assertIn('The run record has no result.', self.log(json.dumps([{'type': 'assistant'}])))
 
 
 class DeniedToolsTests(ScriptCase):
