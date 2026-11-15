@@ -11,7 +11,7 @@ Before asking a maintainer to merge a pull request:
    - the run did not complete, or its summary says it is stale;
    - a later push meets a re-review trigger the repo's `AGENTS.md` lists;
    - a later push is otherwise substantial, after asking a maintainer.
-4. A PR that edits its repo's caller (`.github/workflows/claude-review.yml`) must show a successful automatic run on the final head commit before merge, since only that run uses the PR's copy of the caller. A comment-started run uses the default branch's caller, so it says nothing about the change and isn't required: after a later push, mark the PR draft, then ready, but not with `GITHUB_TOKEN`, whose events don't start workflows. This is the one case that still needs the flip, and the findings from that run follow item 3's rules.
+4. A PR that edits its repo's caller (`.github/workflows/claude-review.yml`) must show a successful automatic run on the final head commit before merge, since only that run uses the PR's copy of the caller: after a later push, mark the PR draft, then ready, but not with `GITHUB_TOKEN`, whose events don't start workflows. This is the one case that still needs the flip, and the findings from that run follow item 3's rules. A comment-started run uses the default branch's caller, so it says nothing about the change and isn't required.
 5. Any check the repo's `AGENTS.md` adds, such as live tests, has run, or the PR says plainly which are still needed.
 
 Reviews don't run on closed or merged PRs, and a comment there is refused. A caller or shared workflow change first runs in full after it merges. No separate check follows: the next PR's review shows whether it works, and item 3 holds that PR until one completes.
