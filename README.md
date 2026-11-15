@@ -11,9 +11,12 @@ Shared pull request review tooling for npHavens repositories:
 - [`review/review-standard.md`](review/review-standard.md): the review standard the
   reviewer applies in every calling repo, together with that repo's own Code Review Rules.
 
-Calling repos use `@main`, so a merge here reaches all of them at once. `main` requires a
-pull request and passing CI, applies those rules to admins, and blocks force pushes and
-deletion. This repository has no caller, so its own pull requests get CI but no review.
+Calling repos use `@main`, not a pinned commit, by the maintainer's choice: a merge here
+reaches all of them at once with no bump PR in each, and a bad merge breaks all of them at
+once. A change that needs more from callers, such as a new permission, secret or input, is
+held back until every caller has been updated (the steps are in `AGENTS.md`), so a caller
+copied from here keeps working. `main` requires a pull request and passing CI, applies those
+rules to admins, and blocks force pushes and deletion. This repository has no caller, so its own pull requests get CI but no review.
 
 ## Calling the review from a repo
 
