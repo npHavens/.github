@@ -14,7 +14,7 @@ Before asking a maintainer to merge a pull request:
 4. A PR that edits its repo's caller (`.github/workflows/claude-review.yml`) also needs a run started by an owner, member or collaborator comment whose first words are exactly `@claude review`, because its automatic run uses the PR's own copy of that file. It must also show a successful automatic run on the final head commit before merge, since only that run uses the PR's copy: after a later push, mark the PR draft, then ready, but not with `GITHUB_TOKEN`, whose events don't start workflows. This is the one case that still needs the flip, and the findings from that run follow item 3's rules.
 5. Any check the repo's `AGENTS.md` adds, such as live tests, has run, or the PR says plainly which are still needed.
 
-After a caller change merges, the author confirms the comment path with a real `@claude review` comment.
+Reviews don't run on closed or merged PRs, and a comment there is refused. A caller or shared workflow change first runs in full after it merges. No separate check follows: the next PR's review shows whether it works, and item 3 holds that PR until one completes.
 
 When asking for the merge, report the CI and Claude results (and Codex's, when Codex is running) and how each finding was handled. A maintainer merges; agents do not. A local `/code-review high` is optional. Fork PRs don't get the Claude review, so a maintainer decides how to review them.
 

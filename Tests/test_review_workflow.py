@@ -24,7 +24,7 @@ case "$1 $2" in
   "pr view")
     if [[ "$*" == *headRefOid* ]]; then [[ -z "$FAKE_HEAD_FAILS" ]] || exit 1; echo "$FAKE_HEAD"; exit 0; fi
     [[ -z "$FAKE_VIEW_FAILS" ]] || exit 1
-    echo "$FAKE_CROSS_REPO" ;;
+    echo "$FAKE_CROSS_REPO ${FAKE_STATE:-OPEN}" ;;
   "pr comment") printf '%s\n' "$5" >> "$FAKE_POSTED" ;;
   api*)
     [[ -z "$FAKE_API_FAILS" ]] || exit 1
@@ -96,6 +96,15 @@ class GateTests(ScriptCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse(proceed)
         self.assertEqual(self.posts(), ['Claude review does not run on fork PRs.'])
+
+    def test_closed_or_merged_pr_is_refused_out_loud(self):
+        for state in ('MERGED', 'CLOSED'):
+            with self.subTest(state=state):
+                self.posted.write_text('', encoding='utf-8')
+                result, proceed = self.gate(body='@claude review', FAKE_STATE=state)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertFalse(proceed)
+                self.assertEqual(self.posts(), ['Claude review does not run on closed or merged PRs.'])
 
     def test_lookup_failure_stops_the_review(self):
         result, proceed = self.gate(body='@claude review', FAKE_VIEW_FAILS='1')

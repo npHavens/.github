@@ -27,7 +27,8 @@ jobs:
     # not reviewed automatically: comment "@claude review" to review the new head.
     # Fork PRs are never reviewed, because the reviewer holds a token that can write to
     # the repo's PRs. This condition is the only fork check for pull_request; for comments,
-    # it only filters cheaply and the step makes the final decision.
+    # it only filters cheaply and the step makes the final decision. Closed and merged PRs
+    # are never reviewed either; the step refuses a comment on one.
     if: >-
       (github.event_name == 'pull_request'
         && !github.event.pull_request.draft
@@ -62,9 +63,15 @@ jobs:
               echo "The comment does not start with @claude review. Skipping."
               exit 0
             fi
-            cross_repo="$(gh pr view "$PR_NUMBER" --json isCrossRepository --jq .isCrossRepository)"
+            pr="$(gh pr view "$PR_NUMBER" --json isCrossRepository,state --jq '"\(.isCrossRepository) \(.state)"')"
+            read -r cross_repo state <<<"$pr"
             if [[ "$cross_repo" != false ]]; then
               gh pr comment "$PR_NUMBER" --body "Claude review does not run on fork PRs."
+              exit 0
+            fi
+            # A closed or merged PR has no merge left to gate, so a review there only costs a run.
+            if [[ "$state" != OPEN ]]; then
+              gh pr comment "$PR_NUMBER" --body "Claude review does not run on closed or merged PRs."
               exit 0
             fi
           fi

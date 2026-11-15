@@ -31,7 +31,8 @@ deletion. This repository has no caller, so its own pull requests get CI but no 
    (merge gate item 4).
 
 Same-repo pull requests are reviewed when opened or marked ready, and an owner, member or
-collaborator can request another review with a comment that starts `@claude review`. Fork
+collaborator can request another review on an open pull request with a comment that starts
+`@claude review`. Closed and merged pull requests are never reviewed. Fork
 pull requests are never reviewed, because the reviewer holds a token that can write to the
 repo's pull requests.
 

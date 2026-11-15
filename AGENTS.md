@@ -9,9 +9,9 @@ This repository's own pull requests get no Claude or Codex review: it has no cal
 workflow, by the maintainer's choice. Before asking a maintainer to merge, CI passes. When
 asking, report the CI result. A maintainer merges; agents do not.
 
-After a change to `claude-review-reusable.yml` or `review/review-standard.md` merges, the
-author confirms a review in each calling repo with a real `@claude review` comment there.
-Calling repos first run a change after it merges, so one can break until that check.
+Calling repos first run a change to `claude-review-reusable.yml` or
+`review/review-standard.md` after it merges. No separate check follows: each repo's next
+review shows whether it works, and the merge gate holds that PR until a review completes.
 
 Prefer bug fixes, and ship any other improvement as its own small PR. A change to what
 callers provide must keep every existing caller working at each step:
