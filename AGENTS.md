@@ -10,8 +10,9 @@ workflow, by the maintainer's choice. Before asking a maintainer to merge, CI pa
 asking, report the CI result. A maintainer merges; agents do not.
 
 After a change to `claude-review-reusable.yml` or `review/review-standard.md` merges, the
-author confirms a review in each calling repo with a real `@claude review` comment there.
-Calling repos first run a change after it merges, so one can break until that check.
+author confirms the next review on an open PR in each calling repo. Reviews don't run on
+closed or merged PRs. Calling repos first run a change after it merges, so one can break
+until that check.
 
 Prefer bug fixes, and ship any other improvement as its own small PR. A change to what
 callers provide must keep every existing caller working at each step:
