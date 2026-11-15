@@ -13,14 +13,12 @@ Shared pull request review tooling for npHavens repositories:
 
 Calling repos use `@main`, so a merge here reaches all of them at once. `main` requires a
 pull request and passing CI, applies those rules to admins, and blocks force pushes and
-deletion.
+deletion. This repository has no caller, so its own pull requests get CI but no review.
 
 ## Calling the review from a repo
 
-1. Copy [this repo's caller](.github/workflows/claude-review.yml) to
-   `.github/workflows/claude-review.yml` and change only its `uses:` line to
-   `npHavens/.github/.github/workflows/claude-review-reusable.yml@main`. Keep its triggers,
-   permissions and job-level `if:` the same.
+1. Copy [the caller](review/claude-review.yml) unchanged to
+   `.github/workflows/claude-review.yml`.
 2. Add a `CLAUDE_CODE_OAUTH_TOKEN` repository secret.
 3. Put the repo's own review rules under a "Code Review Rules" heading in the root
    `AGENTS.md`, a nested `AGENTS.md`, or a `CODE_REVIEW.md` an `AGENTS.md` points to.
