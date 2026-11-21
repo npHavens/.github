@@ -6,7 +6,7 @@ links here and lists only its own exceptions (see [Per-repo exceptions](#per-rep
 Before asking a maintainer to merge a pull request:
 
 1. CI passes.
-2. Codex reviews count. If Codex does not start on its own, comment `@codex review` once. Keep that phrase out of PR descriptions, where it starts a Codex cloud task instead of a review. Handle its findings like the Claude review's under item 3, reading each priority as a severity: P0 and P1 are High, P2 is Medium and P3 is Low. A Codex run that never starts or never finishes doesn't block a merge. A run that fails with a usage-limit or "limit reached" error doesn't count: nothing to fix or answer, no re-trigger, and the merge isn't blocked.
+2. Codex reviews count. If Codex does not start on its own, comment `@codex review`, at most once per PR. Keep that phrase out of PR descriptions, where it starts a Codex cloud task instead of a review. Item 3's re-review triggers don't apply to Codex. Handle its findings like the Claude review's under item 3, reading each priority as a severity: P0 and P1 are High, P2 is Medium and P3 is Low. Don't wait for Codex once CI and the Claude review are done: report a run that hasn't posted as pending when asking for the merge. A Codex review that posts before the merge still counts. A run that fails with a usage-limit or "limit reached" error doesn't count: nothing to fix or answer, no re-trigger, and the merge isn't blocked.
 3. The Claude review has run once, its summary starts "Claude review finished" or "Claude review posted", and its High and Medium findings are fixed or answered. A finding the summary counts as without a severity label counts as Medium. Answer Low findings in one batched reply or move them to a follow-up issue; don't reply to each one or push only to answer them. The review runs automatically only when a PR is opened or marked ready, and other pushes are not re-reviewed automatically. A re-review is an owner, member or collaborator comment whose first words are exactly `@claude review`; its findings follow the same rules. Request one when:
    - the run did not complete, or its summary says it is stale;
    - a later push meets a re-review trigger the repo's `AGENTS.md` lists;
@@ -16,7 +16,7 @@ Before asking a maintainer to merge a pull request:
 
 Reviews don't run on closed or merged PRs, and a comment there is refused. A caller or shared workflow change first runs in full after it merges. No separate check follows: the next PR's review shows whether it works, and item 3 holds that PR until one completes.
 
-When asking for the merge, report the CI, Claude and Codex results, including when Codex didn't run or hit its usage limit, and how each finding was handled. A maintainer merges; agents do not. A local `/code-review high` is optional. Fork PRs don't get the Claude review, so a maintainer decides how to review them.
+When asking for the merge, report the CI, Claude and Codex results, including when Codex is pending, didn't run or hit its usage limit, and how each finding was handled. A maintainer merges; agents do not. A local `/code-review high` is optional. Fork PRs don't get the Claude review, so a maintainer decides how to review them.
 
 ## Per-repo exceptions
 
